@@ -1,9 +1,9 @@
 package com.example.lablearnandroid
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,95 +29,84 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.lablearnandroid.ui.theme.LabLearnAndroidTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            Column (modifier = Modifier
+            RPGCardView()
+        }
+    }
+
+    @Composable
+    fun RPGCardView() {
+        Column(
+            modifier = Modifier
                 .fillMaxSize()
-                .background(color= Color.LightGray)
-                .padding(64.dp)
-            ){
-                //hp
-                Box(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(32.dp)
-                    .background(color= Color.White)
-                ) {
-                    Text(
-                        text = "hp",
-                        modifier = Modifier
-                            .align(alignment = Alignment.CenterStart)
-                            .fillMaxWidth(fraction = 0.11f)
-                            .background(color = Color.Red)
-                            .padding(8.dp)
-                    )
-                }
-                //image
-                Image(
-                    painter = painterResource(id = R.drawable.ic_profile),
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(480.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 16.dp)
+                .background(color = Color.Gray)
+                .padding(32.dp)) {
+            // hp
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .height(32.dp)
+                .background(color = Color.White)
+            ) {
+                Text(
+                    text = "hp",
+                    modifier = Modifier
+                        .align(alignment = Alignment.CenterStart)
+                        .fillMaxWidth(fraction = 0.55f)
+                        .background(color = Color.Red)
+                        .padding(8.dp)
                 )
-
-                var str by remember { mutableStateOf(8) }
-                var agi by remember { mutableStateOf(10) }
-                var int by remember { mutableStateOf(15) }
-                Row (modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween){
-
-                    Column {
-                        Button(onClick =  {
-                            str = str + 1
-                        }){
-                            Text(text = "+ ", fontSize = 32.sp)
-                        }
-                        Text(text = "Str: ", fontSize = 32.sp)
-                        Text(text = str.toString(),fontSize = 32.sp)
-
-                        Text(text = "-", fontSize = 32.sp,
-                            modifier = Modifier.clickable {  })
-
-                    }
-                    Column {
-                        Text(text = "Agi: ", fontSize = 32.sp)
-                        Text(text = agi.toString(),fontSize = 32.sp)
-                    }
-                    Column {
-                        Text(text = "Int:", fontSize = 32.sp)
-                        Text(text = "C", fontSize = 32.sp)
-                    }
-
-
-                }
-
-
             }
+            // image
+            Image(
+                painter = painterResource(R.drawable.ic_profile),
+                contentDescription = "My Image",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 16.dp, bottom = 32.dp)
+                    .clickable {
+                        startActivity(Intent(this@MainActivity, PokedexActivity::class.java))
+                    }
+            )
 
+            var str by remember { mutableStateOf(8) }
+            var agi by remember { mutableStateOf(10) }
+            var int by remember { mutableStateOf(15) }
+            // status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Button(onClick = {
+                        str = str + 1
+                    }) {
+                        Text(text = "+", fontSize = 32.sp)
+                    }
+                    Text(text = "Str", fontSize = 32.sp)
+                    Text(text = str.toString(), fontSize = 32.sp)
+                    Text(text = "-", fontSize = 32.sp, modifier = Modifier.clickable {
+                        str = str - 1
+                    })
+                }
+                Column {
+                    Text(text = "Agi", fontSize = 32.sp)
+                    Text(text = agi.toString(), fontSize = 32.sp)
+                }
+                Column {
+                    Text(text = "Int", fontSize = 32.sp)
+                    Text(text = int.toString(), fontSize = 32.sp)
+                }
+            }
         }
     }
 
+    @Preview
     @Composable
-    fun Greeting(name: String, modifier: Modifier = Modifier) {
-        Text(
-            text = "Hello $name!",
-            modifier = modifier
-        )
-    }
-
-    @Preview(showBackground = true)
-    @Composable
-    fun GreetingPreview() {
-        LabLearnAndroidTheme {
-            Greeting("Android")
-        }
+    fun previewScreen() {
+        RPGCardView()
     }
 }
-/*@Preview(showBackground = true)
-@Composable
-fun*/
