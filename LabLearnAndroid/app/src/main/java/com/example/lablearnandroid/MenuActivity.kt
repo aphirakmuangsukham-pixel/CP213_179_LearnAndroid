@@ -13,7 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-class MenuActivity : ComponentActivity() {
+class MenuActivity : ComponentActivity() (
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -38,3 +38,5 @@ class MenuActivity : ComponentActivity() {
         }
     }
 }
+
+        
