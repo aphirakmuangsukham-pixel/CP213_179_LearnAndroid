@@ -45,4 +45,4 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
-//i love pokemon go
+//I love pokemon go
