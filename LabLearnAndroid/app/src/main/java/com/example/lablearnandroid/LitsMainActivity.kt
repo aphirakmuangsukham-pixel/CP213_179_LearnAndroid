@@ -20,7 +20,7 @@ class LitsMainActivity : ComponentActivity() {
         setContent {
             LabLearnAndroidTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
+                    LitsGreeting(
                         name = "Android",
                         modifier = Modifier.padding(innerPadding)
                     )
@@ -31,7 +31,7 @@ class LitsMainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
+fun LitsGreeting(name: String, modifier: Modifier = Modifier) {
     Text(
         text = "Hello $name!",
         modifier = modifier
@@ -40,9 +40,9 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun LitsGreetingPreview() {
     LabLearnAndroidTheme {
-        Greeting("Android")
+        LitsGreeting("Android")
     }
 }
 //I love pokemon go

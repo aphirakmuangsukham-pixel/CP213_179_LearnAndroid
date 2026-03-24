@@ -41,13 +41,13 @@ class PokedexActivity : ComponentActivity() {
         Log.i("Lifecycle", "PokedexActivity : onCreate")
         enableEdgeToEdge()
         setContent {
-            ListScreen(viewModel)
+            PokedexListScreen(viewModel)
         }
     }
 }
 
 @Composable
-fun ListScreen(viewModel: PokemonViewModel) {
+fun PokedexListScreen(viewModel: PokemonViewModel) {
 
     val pokemonList by viewModel.pokemonList.collectAsState()
 
@@ -95,6 +95,6 @@ fun ListScreen(viewModel: PokemonViewModel) {
 
 @Preview(showBackground = true)
 @Composable
-fun ListPreview() {
-    ListScreen(PokemonViewModel())
+fun PokedexListPreview() {
+    PokedexListScreen(PokemonViewModel())
 }

@@ -13,7 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-class MenuActivity : ComponentActivity() (
+class MenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -34,9 +34,29 @@ class MenuActivity : ComponentActivity() (
                 }) {
                     Text("LifeCycleComposeActivity")
                 }
+                Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, SharedPreferencesActivity::class.java))
+                }) {
+                    Text("SharedPreferencesActivity")
+                }
+                Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, PokemonViewModel::class.java))
+                }) {
+                    Text("PokemonViewModel")
+                }
+                Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, GalleryActivity::class.java))
+                }) {
+                    Text("GalleryActivity")
+                }
+                Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, SensorActivity::class.java))
+                }) {
+                    Text("SensorActivity")
+                }
             }
         }
     }
 }
 
-        
+// check in 24 feb
