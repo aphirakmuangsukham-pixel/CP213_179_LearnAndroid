@@ -1,0 +1,13 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+drawable ic_profile
+drawable outline_arrow_drop_down_24
+drawable outline_arrow_drop_up_24
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+style Theme.FlashCard
+xml backup_rules
+xml data_extraction_rules
