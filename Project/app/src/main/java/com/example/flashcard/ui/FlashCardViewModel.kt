@@ -86,33 +86,37 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             try {
                 val generativeModel = GenerativeModel(
-                    modelName = "gemini-1.5-flash",
+                    modelName = "gemini-2.0-flash",
                     apiKey = apiKey
                 )
 
-                val prompt = """
-                    You are a helpful study assistant. Extract key concepts from the following text and turn them into flashcards.
-                    Return ONLY a raw JSON array of objects. Do not use Markdown blocks like ```json.
-                    Each object must have exactly two string fields: "frontText" and "backText".
-                    
-                    Text:
-                    $text
-                """.trimIndent()
+                val prompt = "Create flashcards from this text. Reply ONLY with a JSON array, no markdown, no explanation. Format: [{\"frontText\":\"question\",\"backText\":\"answer\"}]. Text: $text"
 
                 val response = generativeModel.generateContent(prompt)
-                val jsonText = response.text?.trim() ?: ""
-                
-                // Clean markdown code blocks if the model accidentally outputs them
-                val cleanedJson = jsonText.removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+                val jsonText = response.text ?: ""
 
+                android.util.Log.d("FlashcardAI", "Raw AI response: $jsonText")
+
+                // Extract the JSON array from the response
+                val startIndex = jsonText.indexOf('[')
+                val endIndex = jsonText.lastIndexOf(']')
+
+                if (startIndex == -1 || endIndex == -1 || startIndex >= endIndex) {
+                    onResult(false, "Unexpected response from AI:\n\n${jsonText.take(300)}")
+                    return@launch
+                }
+
+                val cleanedJson = jsonText.substring(startIndex, endIndex + 1)
                 val format = Json { ignoreUnknownKeys = true }
                 val aiCards = format.decodeFromString<List<AiFlashcardResponse>>(cleanedJson)
 
                 if (aiCards.isEmpty()) {
-                    onResult(false, "AI generated no cards.")
+                    onResult(false, "AI generated no cards. Please try with more detailed text.")
                 } else {
                     aiCards.forEach {
-                        flashCardDao.insertCard(FlashCard(categoryId = categoryId, frontText = it.frontText, backText = it.backText))
+                        flashCardDao.insertCard(
+                            FlashCard(categoryId = categoryId, frontText = it.frontText, backText = it.backText)
+                        )
                     }
                     onResult(true, "Successfully generated ${aiCards.size} cards!")
                 }
