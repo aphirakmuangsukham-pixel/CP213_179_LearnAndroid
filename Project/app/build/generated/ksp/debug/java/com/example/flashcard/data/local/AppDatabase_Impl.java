@@ -31,22 +31,26 @@ public final class AppDatabase_Impl extends AppDatabase {
 
   private volatile FlashCardDao _flashCardDao;
 
+  private volatile StudyStatDao _studyStatDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(1) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `categories` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `flashcards` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `categoryId` INTEGER NOT NULL, `frontText` TEXT NOT NULL, `backText` TEXT NOT NULL, FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `study_stats` (`date` TEXT NOT NULL, `categoryId` INTEGER NOT NULL, `cardsStudied` INTEGER NOT NULL, `correctAnswers` INTEGER NOT NULL, `studyMinutes` INTEGER NOT NULL, PRIMARY KEY(`date`, `categoryId`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8a52ce709f3768ecebc3c0236f5b39ad')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8306c9d331bcdc96b710b8218eb2284a')");
       }
 
       @Override
       public void dropAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("DROP TABLE IF EXISTS `categories`");
         db.execSQL("DROP TABLE IF EXISTS `flashcards`");
+        db.execSQL("DROP TABLE IF EXISTS `study_stats`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -118,9 +122,24 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoFlashcards + "\n"
                   + " Found:\n" + _existingFlashcards);
         }
+        final HashMap<String, TableInfo.Column> _columnsStudyStats = new HashMap<String, TableInfo.Column>(5);
+        _columnsStudyStats.put("date", new TableInfo.Column("date", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsStudyStats.put("categoryId", new TableInfo.Column("categoryId", "INTEGER", true, 2, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsStudyStats.put("cardsStudied", new TableInfo.Column("cardsStudied", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsStudyStats.put("correctAnswers", new TableInfo.Column("correctAnswers", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsStudyStats.put("studyMinutes", new TableInfo.Column("studyMinutes", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysStudyStats = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesStudyStats = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoStudyStats = new TableInfo("study_stats", _columnsStudyStats, _foreignKeysStudyStats, _indicesStudyStats);
+        final TableInfo _existingStudyStats = TableInfo.read(db, "study_stats");
+        if (!_infoStudyStats.equals(_existingStudyStats)) {
+          return new RoomOpenHelper.ValidationResult(false, "study_stats(com.example.flashcard.data.local.StudyStat).\n"
+                  + " Expected:\n" + _infoStudyStats + "\n"
+                  + " Found:\n" + _existingStudyStats);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "8a52ce709f3768ecebc3c0236f5b39ad", "ca7b9949fa37efa4ac34c0d497f0bc35");
+    }, "8306c9d331bcdc96b710b8218eb2284a", "f0710946f61a401a28bfcc7043a8b7c4");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -131,7 +150,7 @@ public final class AppDatabase_Impl extends AppDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "categories","flashcards");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "categories","flashcards","study_stats");
   }
 
   @Override
@@ -149,6 +168,7 @@ public final class AppDatabase_Impl extends AppDatabase {
       }
       _db.execSQL("DELETE FROM `categories`");
       _db.execSQL("DELETE FROM `flashcards`");
+      _db.execSQL("DELETE FROM `study_stats`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -168,6 +188,7 @@ public final class AppDatabase_Impl extends AppDatabase {
     final HashMap<Class<?>, List<Class<?>>> _typeConvertersMap = new HashMap<Class<?>, List<Class<?>>>();
     _typeConvertersMap.put(CategoryDao.class, CategoryDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(FlashCardDao.class, FlashCardDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(StudyStatDao.class, StudyStatDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -210,6 +231,20 @@ public final class AppDatabase_Impl extends AppDatabase {
           _flashCardDao = new FlashCardDao_Impl(this);
         }
         return _flashCardDao;
+      }
+    }
+  }
+
+  @Override
+  public StudyStatDao studyStatDao() {
+    if (_studyStatDao != null) {
+      return _studyStatDao;
+    } else {
+      synchronized(this) {
+        if(_studyStatDao == null) {
+          _studyStatDao = new StudyStatDao_Impl(this);
+        }
+        return _studyStatDao;
       }
     }
   }
