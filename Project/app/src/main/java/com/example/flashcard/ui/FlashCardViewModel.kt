@@ -24,6 +24,21 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
 
     val categories = categoryDao.getAllCategories()
 
+    private val _streak = MutableStateFlow(0)
+    val streak: StateFlow<Int> = _streak.asStateFlow()
+
+    private val _cardsStudiedToday = MutableStateFlow(0)
+    val cardsStudiedToday: StateFlow<Int> = _cardsStudiedToday.asStateFlow()
+
+    init {
+        loadStats()
+    }
+
+    fun loadStats() {
+        _streak.value = settingsRepository.getStreak()
+        _cardsStudiedToday.value = settingsRepository.getCardsStudiedToday()
+    }
+
     private val _cardsForCategory = MutableStateFlow<List<FlashCard>>(emptyList())
     val cardsForCategory: StateFlow<List<FlashCard>> = _cardsForCategory.asStateFlow()
 
@@ -62,6 +77,21 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
     fun deleteCard(card: FlashCard) {
         viewModelScope.launch {
             flashCardDao.deleteCard(card)
+        }
+    }
+
+    fun finishStudySession(categoryId: Int, correctCount: Int, totalCards: Int) {
+        viewModelScope.launch {
+            if (totalCards > 0) {
+                val accuracy = (correctCount.toFloat() / totalCards) * 100f
+                val category = categoryDao.getCategoryById(categoryId)
+                if (category != null) {
+                    val updatedCategory = category.copy(lastAccuracy = accuracy)
+                    categoryDao.updateCategory(updatedCategory)
+                }
+                settingsRepository.updateStudyStats(totalCards)
+                loadStats()
+            }
         }
     }
 

@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +28,8 @@ import com.example.flashcard.ui.Screen
 @Composable
 fun HomeScreen(navController: NavController, viewModel: FlashCardViewModel) {
     val categories by viewModel.categories.collectAsState(initial = emptyList())
+    val streak by viewModel.streak.collectAsState()
+    val cardsStudiedToday by viewModel.cardsStudiedToday.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
 
@@ -62,6 +66,49 @@ fun HomeScreen(navController: NavController, viewModel: FlashCardViewModel) {
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            
+            // Dashboard Section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Streak Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Default.LocalFireDepartment, contentDescription = "Streak", tint = androidx.compose.ui.graphics.Color(0xFFFF9800), modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("$streak Days", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Streak", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                
+                // Cards Today Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Default.MenuBook, contentDescription = "Cards Today", tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("$cardsStudiedToday Cards", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Studied Today", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
             Text(
                 text = "Your Decks",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
@@ -114,13 +161,26 @@ fun HomeScreen(navController: NavController, viewModel: FlashCardViewModel) {
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                // Decorative element
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                if (category.lastAccuracy != null) {
+                                    val acc = category.lastAccuracy
+                                    Text(
+                                        text = "Score: ${String.format("%.0f", acc)}%",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (acc >= 80f) androidx.compose.ui.graphics.Color(0xFF4CAF50) else MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                        modifier = Modifier
+                                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "New Deck",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                }
                             }
                         }
                     }

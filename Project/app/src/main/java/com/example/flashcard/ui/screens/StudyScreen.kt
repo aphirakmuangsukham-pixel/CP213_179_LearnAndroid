@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,6 +49,7 @@ fun StudyScreen(
 
     var currentIndex by remember { mutableIntStateOf(0) }
     var isFlipped by remember { mutableStateOf(false) }
+    var correctCount by remember { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -83,12 +86,23 @@ fun StudyScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Great job!", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Text("You've finished this deck.", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                val accuracy = (correctCount.toFloat() / studyCards.size) * 100
+                Text(
+                    text = "Accuracy: ${String.format("%.0f", accuracy)}%",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (accuracy >= 80) androidx.compose.ui.graphics.Color(0xFF4CAF50) else MaterialTheme.colorScheme.secondary
+                )
+
                 Spacer(modifier = Modifier.height(32.dp))
                 Button(
                     onClick = {
                         studyCards = studyCards.shuffled()
                         currentIndex = 0
                         isFlipped = false
+                        correctCount = 0
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp)
@@ -183,18 +197,48 @@ fun StudyScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                Button(
-                    onClick = {
-                        isFlipped = false
-                        currentIndex++
-                    },
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Got it! Next Card", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    // Incorrect Button
+                    Button(
+                        onClick = {
+                            isFlipped = false
+                            val nextIndex = currentIndex + 1
+                            if (nextIndex == studyCards.size) {
+                                viewModel.finishStudySession(categoryId, correctCount, studyCards.size)
+                            }
+                            currentIndex = nextIndex
+                        },
+                        modifier = Modifier.weight(1f).height(64.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Incorrect", modifier = Modifier.padding(end = 8.dp))
+                        Text("Incorrect", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Correct Button
+                    Button(
+                        onClick = {
+                            isFlipped = false
+                            correctCount++
+                            val nextIndex = currentIndex + 1
+                            if (nextIndex == studyCards.size) {
+                                viewModel.finishStudySession(categoryId, correctCount, studyCards.size)
+                            }
+                            currentIndex = nextIndex
+                        },
+                        modifier = Modifier.weight(1f).height(64.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF4CAF50))
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = "Correct", modifier = Modifier.padding(end = 8.dp))
+                        Text("Correct", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
