@@ -25,6 +25,13 @@ import com.example.flashcard.ui.FlashCardViewModel
 @Composable
 fun ChallengeMenuScreen(navController: NavController, viewModel: FlashCardViewModel) {
     val context = LocalContext.current
+    
+    val categories by viewModel.categories.collectAsState(initial = emptyList())
+    var selectedCategoryId by remember { mutableIntStateOf(-1) } // -1 means All Decks
+    var expanded by remember { mutableStateOf(false) }
+    
+    var showTimeAttackDialog by remember { mutableStateOf(false) }
+    var selectedTime by remember { mutableIntStateOf(60) }
 
     Scaffold(
         topBar = {
@@ -57,21 +64,42 @@ fun ChallengeMenuScreen(navController: NavController, viewModel: FlashCardViewMo
             )
             
             Text(
-                text = "Select a mode to challenge yourself across all your decks. You need at least 5 cards in total to play.",
+                text = "Select a mode to challenge yourself. You need at least 5 cards in the selected deck to play.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // Deck Selection
+            Text("Select Deck:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Box(modifier = Modifier.fillMaxWidth().wrapContentSize(Alignment.TopStart)) {
+                OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                    val selectedName = if (selectedCategoryId == -1) "All Decks" else categories.find { it.id == selectedCategoryId }?.name ?: "All Decks"
+                    Text(selectedName)
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("All Decks") },
+                        onClick = { selectedCategoryId = -1; expanded = false }
+                    )
+                    categories.forEach { category ->
+                        DropdownMenuItem(
+                            text = { Text(category.name) },
+                            onClick = { selectedCategoryId = category.id; expanded = false }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             ChallengeCard(
                 title = "Quiz Mode",
-                description = "Practice with 20 random cards from all your decks. No time limit.",
+                description = "Practice with 20 random cards from the selected deck. No time limit.",
                 icon = Icons.Default.Lightbulb,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 onColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 onClick = {
-                    viewModel.startQuizMode { isReady ->
+                    viewModel.startQuizMode(selectedCategoryId) { isReady ->
                         if (isReady) {
                             navController.navigate("challenge_game/quiz")
                         } else {
@@ -83,19 +111,11 @@ fun ChallengeMenuScreen(navController: NavController, viewModel: FlashCardViewMo
 
             ChallengeCard(
                 title = "Time Attack",
-                description = "Race against the clock! Answer as many flashcards as you can in 60 seconds.",
+                description = "Race against the clock! Answer as many flashcards as you can.",
                 icon = Icons.Default.Timer,
                 color = MaterialTheme.colorScheme.errorContainer,
                 onColor = MaterialTheme.colorScheme.onErrorContainer,
-                onClick = {
-                    viewModel.startTimeAttack { isReady ->
-                        if (isReady) {
-                            navController.navigate("challenge_game/time_attack")
-                        } else {
-                            Toast.makeText(context, "Not enough cards! Add at least 5 cards.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
+                onClick = { showTimeAttackDialog = true }
             )
 
             ChallengeCard(
@@ -105,13 +125,53 @@ fun ChallengeMenuScreen(navController: NavController, viewModel: FlashCardViewMo
                 color = MaterialTheme.colorScheme.tertiaryContainer,
                 onColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 onClick = {
-                    viewModel.startDailyChallenge { isReady ->
+                    viewModel.startDailyChallenge(selectedCategoryId) { isReady ->
                         if (isReady) {
                             navController.navigate("challenge_game/daily")
                         } else {
                             Toast.makeText(context, "Not enough cards! Add at least 5 cards.", Toast.LENGTH_SHORT).show()
                         }
                     }
+                }
+            )
+        }
+
+        if (showTimeAttackDialog) {
+            AlertDialog(
+                onDismissRequest = { showTimeAttackDialog = false },
+                title = { Text("Select Time Limit") },
+                text = {
+                    Column {
+                        listOf(30, 60, 120).forEach { time ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedTime = time }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(selected = selectedTime == time, onClick = { selectedTime = time })
+                                Text("$time Seconds", modifier = Modifier.padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        showTimeAttackDialog = false
+                        viewModel.startTimeAttack(selectedCategoryId, selectedTime) { isReady ->
+                            if (isReady) {
+                                navController.navigate("challenge_game/time_attack")
+                            } else {
+                                Toast.makeText(context, "Not enough cards in this deck!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }) {
+                        Text("Start")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showTimeAttackDialog = false }) { Text("Cancel") }
                 }
             )
         }

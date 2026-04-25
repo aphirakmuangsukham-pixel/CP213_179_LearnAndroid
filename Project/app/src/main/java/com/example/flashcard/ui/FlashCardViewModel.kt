@@ -149,27 +149,39 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _challengeTimeLeft = MutableStateFlow(0)
     val challengeTimeLeft: StateFlow<Int> = _challengeTimeLeft.asStateFlow()
 
-    fun startQuizMode(onReady: (Boolean) -> Unit) {
+    fun startQuizMode(categoryId: Int?, onReady: (Boolean) -> Unit) {
         viewModelScope.launch {
             val allCards = flashCardDao.getAllCardsSync()
-            if (allCards.size < 5) {
+            val filteredCards = if (categoryId != null && categoryId != -1) {
+                allCards.filter { it.categoryId == categoryId }
+            } else {
+                allCards
+            }
+            
+            if (filteredCards.size < 5) {
                 onReady(false)
                 return@launch
             }
-            _challengeCards.value = allCards.shuffled().take(20)
+            _challengeCards.value = filteredCards.shuffled().take(20)
             onReady(true)
         }
     }
 
-    fun startTimeAttack(onReady: (Boolean) -> Unit) {
+    fun startTimeAttack(categoryId: Int?, timeLimit: Int, onReady: (Boolean) -> Unit) {
         viewModelScope.launch {
             val allCards = flashCardDao.getAllCardsSync()
-            if (allCards.size < 5) {
+            val filteredCards = if (categoryId != null && categoryId != -1) {
+                allCards.filter { it.categoryId == categoryId }
+            } else {
+                allCards
+            }
+
+            if (filteredCards.size < 5) {
                 onReady(false)
                 return@launch
             }
-            _challengeCards.value = allCards.shuffled()
-            _challengeTimeLeft.value = 60
+            _challengeCards.value = filteredCards.shuffled()
+            _challengeTimeLeft.value = timeLimit
             onReady(true)
             
             // Start timer
@@ -182,17 +194,23 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun startDailyChallenge(onReady: (Boolean) -> Unit) {
+    fun startDailyChallenge(categoryId: Int?, onReady: (Boolean) -> Unit) {
         viewModelScope.launch {
             val allCards = flashCardDao.getAllCardsSync()
-            if (allCards.size < 5) {
+            val filteredCards = if (categoryId != null && categoryId != -1) {
+                allCards.filter { it.categoryId == categoryId }
+            } else {
+                allCards
+            }
+
+            if (filteredCards.size < 5) {
                 onReady(false)
                 return@launch
             }
             // Use today's epoch day as a seed so it's the same random set for the whole day
             val seed = LocalDate.now().toEpochDay()
             val random = Random(seed)
-            _challengeCards.value = allCards.shuffled(random).take(10)
+            _challengeCards.value = filteredCards.shuffled(random).take(10)
             onReady(true)
         }
     }

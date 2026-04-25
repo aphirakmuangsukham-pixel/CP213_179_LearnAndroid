@@ -2,6 +2,7 @@ package com.example.flashcard.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,28 @@ fun ChallengeGameScreen(navController: NavController, viewModel: FlashCardViewMo
 
     val currentCard = cards.getOrNull(currentIndex)
 
+    val timerColor = when {
+        timeLeft in 6..10 -> Color(0xFFFFA500) // Orange
+        timeLeft in 1..5 -> Color.Red
+        else -> MaterialTheme.colorScheme.primary
+    }
+
+    val timerScale by animateFloatAsState(
+        targetValue = if (timeLeft in 1..10) 1.2f else 1.0f,
+        label = "timerScale"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "shake")
+    val shakeOffset by infiniteTransition.animateFloat(
+        initialValue = if (timeLeft in 1..5) -10f else 0f,
+        targetValue = if (timeLeft in 1..5) 10f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(50, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shakeOffset"
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -65,8 +90,14 @@ fun ChallengeGameScreen(navController: NavController, viewModel: FlashCardViewMo
                         Text(
                             text = "${timeLeft}s",
                             style = MaterialTheme.typography.titleLarge,
-                            color = if (timeLeft <= 10) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 16.dp),
+                            color = timerColor,
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .graphicsLayer {
+                                    scaleX = timerScale
+                                    scaleY = timerScale
+                                    translationX = shakeOffset
+                                },
                             fontWeight = FontWeight.Bold
                         )
                     }
