@@ -11,6 +11,11 @@ private const val PREF_STREAK = "study_streak"
 private const val PREF_LAST_STUDY_DATE = "last_study_date"
 private const val PREF_CARDS_STUDIED_TODAY = "cards_studied_today"
 
+private const val PREF_IS_REMINDER_ENABLED = "is_reminder_enabled"
+private const val PREF_REMINDER_HOUR = "reminder_hour"
+private const val PREF_REMINDER_MINUTE = "reminder_minute"
+private const val PREF_IS_FOCUS_MODE_ENABLED = "is_focus_mode_enabled"
+
 class SettingsRepository(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("flashcard_settings", Context.MODE_PRIVATE)
@@ -59,5 +64,30 @@ class SettingsRepository(context: Context) {
             .putInt(PREF_STREAK, streak)
             .putInt(PREF_CARDS_STUDIED_TODAY, currentDailyCards)
             .apply()
+    }
+
+    // Reminders
+    fun isReminderEnabled(): Boolean = prefs.getBoolean(PREF_IS_REMINDER_ENABLED, false)
+    
+    fun setReminderEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_IS_REMINDER_ENABLED, enabled).apply()
+    }
+
+    fun getReminderHour(): Int = prefs.getInt(PREF_REMINDER_HOUR, 8)
+    
+    fun getReminderMinute(): Int = prefs.getInt(PREF_REMINDER_MINUTE, 0)
+
+    fun setReminderTime(hour: Int, minute: Int) {
+        prefs.edit()
+            .putInt(PREF_REMINDER_HOUR, hour)
+            .putInt(PREF_REMINDER_MINUTE, minute)
+            .apply()
+    }
+
+    // Focus Mode
+    fun isFocusModeEnabled(): Boolean = prefs.getBoolean(PREF_IS_FOCUS_MODE_ENABLED, false)
+
+    fun setFocusModeEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_IS_FOCUS_MODE_ENABLED, enabled).apply()
     }
 }

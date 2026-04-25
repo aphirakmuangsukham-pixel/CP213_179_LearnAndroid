@@ -103,6 +103,26 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
         settingsRepository.saveGeminiApiKey(key)
     }
 
+    // Reminders
+    fun isReminderEnabled(): Boolean = settingsRepository.isReminderEnabled()
+    fun setReminderEnabled(enabled: Boolean) {
+        settingsRepository.setReminderEnabled(enabled)
+    }
+    fun getReminderHour(): Int = settingsRepository.getReminderHour()
+    fun getReminderMinute(): Int = settingsRepository.getReminderMinute()
+    fun setReminderTime(hour: Int, minute: Int) {
+        settingsRepository.setReminderTime(hour, minute)
+    }
+
+    // Focus Mode
+    private val _isFocusModeEnabled = MutableStateFlow(settingsRepository.isFocusModeEnabled())
+    val isFocusModeEnabled: StateFlow<Boolean> = _isFocusModeEnabled.asStateFlow()
+
+    fun setFocusModeEnabled(enabled: Boolean) {
+        settingsRepository.setFocusModeEnabled(enabled)
+        _isFocusModeEnabled.value = enabled
+    }
+
     /**
      * Send text to Gemini to generate flashcards
      */

@@ -109,6 +109,66 @@ fun HomeScreen(navController: NavController, viewModel: FlashCardViewModel) {
                 }
             }
 
+            // Focus Mode Card
+            val isFocusModeEnabled by viewModel.isFocusModeEnabled.collectAsState()
+            val context = androidx.compose.ui.platform.LocalContext.current
+            
+            // Intent launcher for notification policy settings
+            val intentLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+            ) {
+                // Recheck permission when returning from settings
+                val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                if (notificationManager.isNotificationPolicyAccessGranted) {
+                    viewModel.setFocusModeEnabled(true)
+                }
+            }
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isFocusModeEnabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Focus Mode",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isFocusModeEnabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = if (isFocusModeEnabled) "Distractions muted while in app" else "Block notifications while learning",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isFocusModeEnabled) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
+                    Switch(
+                        checked = isFocusModeEnabled,
+                        onCheckedChange = { enabled ->
+                            val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                            if (enabled && !notificationManager.isNotificationPolicyAccessGranted) {
+                                // Request permission
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                intentLauncher.launch(intent)
+                            } else {
+                                viewModel.setFocusModeEnabled(enabled)
+                            }
+                        }
+                    )
+                }
+            }
+
             Text(
                 text = "Your Decks",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
