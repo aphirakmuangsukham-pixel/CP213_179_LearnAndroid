@@ -9,7 +9,11 @@ import com.example.flashcard.data.local.FlashCard
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import java.time.LocalDate
+import kotlin.random.Random
 
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.serialization.json.Json
@@ -32,6 +36,21 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         loadStats()
+        preloadSampleDataIfNeeded()
+    }
+
+    private fun preloadSampleDataIfNeeded() {
+        viewModelScope.launch {
+            val existingCategories = categoryDao.getAllCategories().first()
+            if (existingCategories.isEmpty()) {
+                val sampleId = categoryDao.insertCategory(Category(name = "General Knowledge")).toInt()
+                flashCardDao.insertCard(FlashCard(categoryId = sampleId, frontText = "What is the capital of France?", backText = "Paris"))
+                flashCardDao.insertCard(FlashCard(categoryId = sampleId, frontText = "What is 8 x 7?", backText = "56"))
+                flashCardDao.insertCard(FlashCard(categoryId = sampleId, frontText = "Which planet is known as the Red Planet?", backText = "Mars"))
+                flashCardDao.insertCard(FlashCard(categoryId = sampleId, frontText = "What is the chemical symbol for water?", backText = "H2O"))
+                flashCardDao.insertCard(FlashCard(categoryId = sampleId, frontText = "Who painted the Mona Lisa?", backText = "Leonardo da Vinci"))
+            }
+        }
     }
 
     fun loadStats() {
@@ -123,6 +142,61 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
         _isFocusModeEnabled.value = enabled
     }
 
+    // --- Challenge Modes ---
+    private val _challengeCards = MutableStateFlow<List<FlashCard>>(emptyList())
+    val challengeCards: StateFlow<List<FlashCard>> = _challengeCards.asStateFlow()
+
+    private val _challengeTimeLeft = MutableStateFlow(0)
+    val challengeTimeLeft: StateFlow<Int> = _challengeTimeLeft.asStateFlow()
+
+    fun startQuizMode(onReady: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val allCards = flashCardDao.getAllCardsSync()
+            if (allCards.size < 5) {
+                onReady(false)
+                return@launch
+            }
+            _challengeCards.value = allCards.shuffled().take(20)
+            onReady(true)
+        }
+    }
+
+    fun startTimeAttack(onReady: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val allCards = flashCardDao.getAllCardsSync()
+            if (allCards.size < 5) {
+                onReady(false)
+                return@launch
+            }
+            _challengeCards.value = allCards.shuffled()
+            _challengeTimeLeft.value = 60
+            onReady(true)
+            
+            // Start timer
+            launch {
+                while (_challengeTimeLeft.value > 0) {
+                    delay(1000)
+                    _challengeTimeLeft.value -= 1
+                }
+            }
+        }
+    }
+
+    fun startDailyChallenge(onReady: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val allCards = flashCardDao.getAllCardsSync()
+            if (allCards.size < 5) {
+                onReady(false)
+                return@launch
+            }
+            // Use today's epoch day as a seed so it's the same random set for the whole day
+            val seed = LocalDate.now().toEpochDay()
+            val random = Random(seed)
+            _challengeCards.value = allCards.shuffled(random).take(10)
+            onReady(true)
+        }
+    }
+
     /**
      * Send text to Gemini to generate flashcards
      */
@@ -140,7 +214,13 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
                     apiKey = apiKey
                 )
 
-                val prompt = "Create flashcards from this text. Reply ONLY with a JSON array, no markdown, no explanation. Format: [{\"frontText\":\"question\",\"backText\":\"answer\"}]. Text: $text"
+                val prompt = """
+                    Analyze the following text and automatically summarize it into Q&A style flashcards. 
+                    Extract the key concepts and form them into clear questions (frontText) and concise answers (backText). 
+                    Reply ONLY with a JSON array, no markdown formatting, and no explanation. 
+                    Format: [{"frontText":"question","backText":"answer"}]. 
+                    Text: $text
+                """.trimIndent()
 
                 val response = generativeModel.generateContent(prompt)
                 val jsonText = response.text ?: ""

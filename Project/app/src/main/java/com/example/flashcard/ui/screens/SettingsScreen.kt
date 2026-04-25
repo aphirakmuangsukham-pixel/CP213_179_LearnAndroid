@@ -26,8 +26,6 @@ import androidx.core.content.ContextCompat
 @Composable
 fun SettingsScreen(navController: NavController, viewModel: FlashCardViewModel) {
     val context = LocalContext.current
-    var apiKey by remember { mutableStateOf(viewModel.getGeminiApiKey()) }
-    var showSnackbar by remember { mutableStateOf(false) }
 
     // Reminders
     var isReminderEnabled by remember { mutableStateOf(viewModel.isReminderEnabled()) }
@@ -136,53 +134,7 @@ fun SettingsScreen(navController: NavController, viewModel: FlashCardViewModel) 
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(32.dp))
 
-            // API Key Section
-            Text(
-                text = "Gemini AI Configuration",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("Gemini API Key") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Get your API key from Google AI Studio. The key is saved locally on your device.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {
-                    viewModel.saveGeminiApiKey(apiKey)
-                    showSnackbar = true
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Save Settings")
-            }
-            
-            if (showSnackbar) {
-                LaunchedEffect(Unit) {
-                    kotlinx.coroutines.delay(2000)
-                    showSnackbar = false
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "API Key saved successfully!",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
         }
     }
 }

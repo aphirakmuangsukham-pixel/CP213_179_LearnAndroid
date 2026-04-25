@@ -12,7 +12,7 @@ interface CategoryDao {
     suspend fun getCategoryById(categoryId: Int): Category?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCategory(category: Category)
+    suspend fun insertCategory(category: Category): Long
 
     @Update
     suspend fun updateCategory(category: Category)
@@ -25,6 +25,9 @@ interface CategoryDao {
 interface FlashCardDao {
     @Query("SELECT * FROM flashcards WHERE categoryId = :categoryId")
     fun getCardsByCategory(categoryId: Int): Flow<List<FlashCard>>
+
+    @Query("SELECT * FROM flashcards")
+    suspend fun getAllCardsSync(): List<FlashCard>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCard(flashCard: FlashCard)

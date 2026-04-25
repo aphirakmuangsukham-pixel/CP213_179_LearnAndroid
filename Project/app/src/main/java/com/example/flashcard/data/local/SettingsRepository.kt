@@ -5,7 +5,8 @@ import android.content.SharedPreferences
 
 import java.time.LocalDate
 
-private const val DEFAULT_API_KEY = "AIzaSyDmvXyItBFGC2vykKGy7QklKSSOhpGhxuw"
+// AI (Gemini) Default API Key
+private const val DEFAULT_API_KEY = "AIzaSyCxeE7aPZkJNu_wH2W2CD_XzqgQoti3CLk"
 private const val PREF_API_KEY = "gemini_api_key"
 private const val PREF_STREAK = "study_streak"
 private const val PREF_LAST_STUDY_DATE = "last_study_date"

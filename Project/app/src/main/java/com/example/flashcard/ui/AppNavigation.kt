@@ -20,6 +20,10 @@ sealed class Screen(val route: String) {
     object Study : Screen("study/{categoryId}/{categoryName}") {
         fun createRoute(categoryId: Int, categoryName: String) = "study/$categoryId/$categoryName"
     }
+    object ChallengeMenu : Screen("challenge_menu")
+    object ChallengeGame : Screen("challenge_game/{mode}") {
+        fun createRoute(mode: String) = "challenge_game/$mode"
+    }
 }
 
 @Composable
@@ -32,6 +36,16 @@ fun AppNavigation(viewModel: FlashCardViewModel = viewModel()) {
         }
         composable(Screen.Settings.route) {
             com.example.flashcard.ui.screens.SettingsScreen(navController, viewModel)
+        }
+        composable(Screen.ChallengeMenu.route) {
+            com.example.flashcard.ui.screens.ChallengeMenuScreen(navController, viewModel)
+        }
+        composable(
+            route = Screen.ChallengeGame.route,
+            arguments = listOf(navArgument("mode") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val mode = backStackEntry.arguments?.getString("mode") ?: "quiz"
+            com.example.flashcard.ui.screens.ChallengeGameScreen(navController, viewModel, mode)
         }
         composable(
             route = Screen.CategoryDetail.route,
