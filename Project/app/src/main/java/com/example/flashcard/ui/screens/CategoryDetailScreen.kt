@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
@@ -96,7 +99,7 @@ fun CategoryDetailScreen(
                 title = { Text(categoryName, style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -172,7 +175,7 @@ fun CategoryDetailScreen(
                                 }
                                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
                                     Text("Q: ${card.frontText}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
                                     Text("A: ${card.backText}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                                     Row(
@@ -199,71 +202,120 @@ fun CategoryDetailScreen(
             }
         }
 
-        // ── Add Card Dialog ──────────────────────────────────────────────────────
+        // ── Add Cards Dialog (Multi-Card) ─────────────────────────────────────────
         if (showAddCardDialog) {
+            data class CardEntry(val front: String = "", val back: String = "")
+            val cardEntries = remember { mutableStateListOf(CardEntry()) }
+            val listState = rememberLazyListState()
+
             AlertDialog(
                 onDismissRequest = { showAddCardDialog = false },
-                title = { Text("New Flashcard") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("New Flashcards", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                            Text("${cardEntries.size}")
+                        }
+                    }
+                },
                 text = {
-                    Column {
-                        OutlinedTextField(
-                            value = frontText,
-                            onValueChange = { frontText = it },
-                            label = { Text("Front (Question)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = backText,
-                            onValueChange = { backText = it },
-                            label = { Text("Back (Answer)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Image section
-                        if (pendingAddImagePath != null) {
-                            Box {
-                                AsyncImage(
-                                    model = File(pendingAddImagePath!!),
-                                    contentDescription = "Selected image",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(160.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                )
-                                TextButton(
-                                    onClick = { pendingAddImagePath = null },
-                                    modifier = Modifier.align(Alignment.TopEnd)
-                                ) {
-                                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        itemsIndexed(cardEntries) { index, entry ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                elevation = CardDefaults.cardElevation(2.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Card ${index + 1}",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        if (cardEntries.size > 1) {
+                                            IconButton(
+                                                onClick = { cardEntries.removeAt(index) },
+                                                modifier = Modifier.size(28.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "Remove",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = entry.front,
+                                        onValueChange = { cardEntries[index] = entry.copy(front = it) },
+                                        label = { Text("Front (Question)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    OutlinedTextField(
+                                        value = entry.back,
+                                        onValueChange = { cardEntries[index] = entry.copy(back = it) },
+                                        label = { Text("Back (Answer)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
                                 }
                             }
-                        } else {
+                        }
+                        item {
                             OutlinedButton(
                                 onClick = {
-                                    addImageLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                    )
+                                    cardEntries.add(CardEntry())
+                                    scope.launch {
+                                        listState.animateScrollToItem(cardEntries.size - 1)
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.Image, contentDescription = null)
+                                Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add Image (optional)")
+                                Text("Add Another Card")
                             }
                         }
                     }
                 },
                 confirmButton = {
-                    Button(onClick = {
-                        if (frontText.isNotBlank() && backText.isNotBlank()) {
-                            viewModel.addCard(categoryId, frontText, backText, pendingAddImagePath)
+                    val validCount = cardEntries.count { it.front.isNotBlank() && it.back.isNotBlank() }
+                    Button(
+                        enabled = validCount > 0,
+                        onClick = {
+                            cardEntries.forEach { entry ->
+                                if (entry.front.isNotBlank() && entry.back.isNotBlank()) {
+                                    viewModel.addCard(categoryId, entry.front, entry.back)
+                                }
+                            }
                             showAddCardDialog = false
                         }
-                    }) { Text("Add") }
+                    ) {
+                        Text(if (validCount > 1) "Add $validCount Cards" else "Add Card")
+                    }
                 },
                 dismissButton = {
                     TextButton(onClick = { showAddCardDialog = false }) { Text("Cancel") }
