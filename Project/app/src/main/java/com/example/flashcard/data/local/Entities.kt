@@ -28,5 +28,6 @@ data class FlashCard(
     val id: Int = 0,
     val categoryId: Int,
     val frontText: String,
-    val backText: String
+    val backText: String,
+    val imageUri: String? = null
 )

@@ -1,6 +1,12 @@
 package com.example.flashcard.ui.screens
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +16,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -17,12 +24,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.flashcard.data.local.FlashCard
 import com.example.flashcard.ui.FlashCardViewModel
 import com.example.flashcard.ui.Screen
+import java.io.File
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +45,7 @@ fun CategoryDetailScreen(
     categoryName: String
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(categoryId) {
         viewModel.loadCardsForCategory(categoryId)
@@ -43,11 +56,39 @@ fun CategoryDetailScreen(
     var showAddCardDialog by remember { mutableStateOf(false) }
     var showEditCardDialog by remember { mutableStateOf<FlashCard?>(null) }
     var showAiDialog by remember { mutableStateOf(false) }
-    
+
     var frontText by remember { mutableStateOf("") }
     var backText by remember { mutableStateOf("") }
     var aiInputText by remember { mutableStateOf("") }
     var isGenerating by remember { mutableStateOf(false) }
+
+    // Pending URI chosen by Photo Picker (before copy to internal storage)
+    var pendingAddImagePath by remember { mutableStateOf<String?>(null) }
+    var pendingEditImagePath by remember { mutableStateOf<String?>(null) }
+
+    // Photo Picker launcher — for Add dialog
+    val addImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val path = viewModel.copyImageToInternalStorage(uri)
+                pendingAddImagePath = path
+            }
+        }
+    }
+
+    // Photo Picker launcher — for Edit dialog
+    val editImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val path = viewModel.copyImageToInternalStorage(uri)
+                pendingEditImagePath = path
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -78,10 +119,11 @@ fun CategoryDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { 
+                onClick = {
                     frontText = ""
                     backText = ""
-                    showAddCardDialog = true 
+                    pendingAddImagePath = null
+                    showAddCardDialog = true
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -115,24 +157,39 @@ fun CategoryDetailScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                                Text("Q: ${card.frontText}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                                Text("A: ${card.backText}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.End
-                                ) {
-                                    IconButton(onClick = {
-                                        frontText = card.frontText
-                                        backText = card.backText
-                                        showEditCardDialog = card
-                                    }) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
-                                    }
-                                    IconButton(onClick = { viewModel.deleteCard(card) }) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Image thumbnail (if any)
+                                if (card.imageUri != null) {
+                                    AsyncImage(
+                                        model = File(card.imageUri),
+                                        contentDescription = "Card image",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(160.dp)
+                                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                                    )
+                                }
+                                Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                                    Text("Q: ${card.frontText}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                                    Text("A: ${card.backText}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                        horizontalArrangement = Arrangement.End
+                                    ) {
+                                        IconButton(onClick = {
+                                            frontText = card.frontText
+                                            backText = card.backText
+                                            pendingEditImagePath = card.imageUri
+                                            showEditCardDialog = card
+                                        }) {
+                                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        IconButton(onClick = { viewModel.deleteCard(card) }) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                                        }
                                     }
                                 }
                             }
@@ -142,22 +199,68 @@ fun CategoryDetailScreen(
             }
         }
 
-        // Add Dialog
+        // ── Add Card Dialog ──────────────────────────────────────────────────────
         if (showAddCardDialog) {
             AlertDialog(
                 onDismissRequest = { showAddCardDialog = false },
                 title = { Text("New Flashcard") },
                 text = {
                     Column {
-                        OutlinedTextField(value = frontText, onValueChange = { frontText = it }, label = { Text("Front (Question)") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(
+                            value = frontText,
+                            onValueChange = { frontText = it },
+                            label = { Text("Front (Question)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(value = backText, onValueChange = { backText = it }, label = { Text("Back (Answer)") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(
+                            value = backText,
+                            onValueChange = { backText = it },
+                            label = { Text("Back (Answer)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Image section
+                        if (pendingAddImagePath != null) {
+                            Box {
+                                AsyncImage(
+                                    model = File(pendingAddImagePath!!),
+                                    contentDescription = "Selected image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                )
+                                TextButton(
+                                    onClick = { pendingAddImagePath = null },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = {
+                                    addImageLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Image, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Add Image (optional)")
+                            }
+                        }
                     }
                 },
                 confirmButton = {
                     Button(onClick = {
                         if (frontText.isNotBlank() && backText.isNotBlank()) {
-                            viewModel.addCard(categoryId, frontText, backText)
+                            viewModel.addCard(categoryId, frontText, backText, pendingAddImagePath)
                             showAddCardDialog = false
                         }
                     }) { Text("Add") }
@@ -168,22 +271,74 @@ fun CategoryDetailScreen(
             )
         }
 
-        // Edit Dialog
+        // ── Edit Card Dialog ──────────────────────────────────────────────────────
         if (showEditCardDialog != null) {
             AlertDialog(
                 onDismissRequest = { showEditCardDialog = null },
                 title = { Text("Edit Flashcard") },
                 text = {
                     Column {
-                        OutlinedTextField(value = frontText, onValueChange = { frontText = it }, label = { Text("Front (Question)") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(
+                            value = frontText,
+                            onValueChange = { frontText = it },
+                            label = { Text("Front (Question)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(value = backText, onValueChange = { backText = it }, label = { Text("Back (Answer)") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(
+                            value = backText,
+                            onValueChange = { backText = it },
+                            label = { Text("Back (Answer)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Image section
+                        if (pendingEditImagePath != null) {
+                            Box {
+                                AsyncImage(
+                                    model = File(pendingEditImagePath!!),
+                                    contentDescription = "Card image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                )
+                                TextButton(
+                                    onClick = { pendingEditImagePath = null },
+                                    modifier = Modifier.align(Alignment.TopEnd)
+                                ) {
+                                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = {
+                                    editImageLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Image, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Add Image (optional)")
+                            }
+                        }
                     }
                 },
                 confirmButton = {
                     Button(onClick = {
                         if (frontText.isNotBlank() && backText.isNotBlank()) {
-                            viewModel.updateCard(showEditCardDialog!!.copy(frontText = frontText, backText = backText))
+                            viewModel.updateCard(
+                                showEditCardDialog!!.copy(
+                                    frontText = frontText,
+                                    backText = backText,
+                                    imageUri = pendingEditImagePath
+                                )
+                            )
                             showEditCardDialog = null
                         }
                     }) { Text("Save") }
@@ -194,7 +349,7 @@ fun CategoryDetailScreen(
             )
         }
 
-        // AI Generate Dialog
+        // ── AI Generate Dialog ────────────────────────────────────────────────────
         if (showAiDialog) {
             AlertDialog(
                 onDismissRequest = { if (!isGenerating) showAiDialog = false },
