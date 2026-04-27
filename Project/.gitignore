@@ -2,3 +2,6 @@
 .kotlin/
 build/
 app/build/
+
+# Contains API keys and local SDK path — never commit this
+local.properties
