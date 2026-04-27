@@ -2,12 +2,10 @@ package com.example.flashcard.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.flashcard.BuildConfig
 
 import java.time.LocalDate
 
-// AI (Gemini) Default API Key
-private const val DEFAULT_API_KEY = "AIzaSyCxeE7aPZkJNu_wH2W2CD_XzqgQoti3CLk"
-private const val PREF_API_KEY = "gemini_api_key"
 private const val PREF_STREAK = "study_streak"
 private const val PREF_LAST_STUDY_DATE = "last_study_date"
 private const val PREF_CARDS_STUDIED_TODAY = "cards_studied_today"
@@ -21,14 +19,11 @@ class SettingsRepository(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("flashcard_settings", Context.MODE_PRIVATE)
 
-    fun getGeminiApiKey(): String {
-        val saved = prefs.getString(PREF_API_KEY, "").orEmpty()
-        return saved.ifBlank { DEFAULT_API_KEY }
-    }
+    /** อ่าน Gemini API Key จาก local.properties ผ่าน BuildConfig โดยตรง */
+    fun getGeminiApiKey(): String = BuildConfig.GEMINI_API_KEY
 
-    fun saveGeminiApiKey(apiKey: String) {
-        prefs.edit().putString(PREF_API_KEY, apiKey).apply()
-    }
+    /** อ่าน Gemini Model Name จาก local.properties ผ่าน BuildConfig โดยตรง */
+    fun getGeminiModel(): String = BuildConfig.GEMINI_MODEL
 
     fun getStreak(): Int {
         return prefs.getInt(PREF_STREAK, 0)

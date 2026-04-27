@@ -1,6 +1,7 @@
 package com.example.flashcard.ui
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.flashcard.data.local.AppDatabase
@@ -12,7 +13,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import java.io.File
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.random.Random
 
 import com.google.ai.client.generativeai.GenerativeModel
@@ -81,15 +86,37 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun addCard(categoryId: Int, frontText: String, backText: String) {
+    fun addCard(categoryId: Int, frontText: String, backText: String, imageUri: String? = null) {
         viewModelScope.launch {
-            flashCardDao.insertCard(FlashCard(categoryId = categoryId, frontText = frontText, backText = backText))
+            flashCardDao.insertCard(FlashCard(categoryId = categoryId, frontText = frontText, backText = backText, imageUri = imageUri))
         }
     }
 
     fun updateCard(card: FlashCard) {
         viewModelScope.launch {
             flashCardDao.updateCard(card)
+        }
+    }
+
+    /**
+     * Copies an image URI into the app's private internal storage so it persists
+     * regardless of the source gallery or external storage permissions.
+     * Returns the absolute file path string, or null if copying fails.
+     */
+    suspend fun copyImageToInternalStorage(sourceUri: Uri): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val dir = File(context.filesDir, "card_images").also { it.mkdirs() }
+                val destFile = File(dir, "${UUID.randomUUID()}.jpg")
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    destFile.outputStream().use { output -> input.copyTo(output) }
+                }
+                destFile.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
         }
     }
 
@@ -115,11 +142,11 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun getGeminiApiKey(): String {
-        return settingsRepository.getGeminiApiKey() ?: ""
+        return settingsRepository.getGeminiApiKey()
     }
 
-    fun saveGeminiApiKey(key: String) {
-        settingsRepository.saveGeminiApiKey(key)
+    fun getGeminiModel(): String {
+        return settingsRepository.getGeminiModel()
     }
 
     // Reminders
@@ -228,7 +255,7 @@ class FlashCardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             try {
                 val generativeModel = GenerativeModel(
-                    modelName = "gemini-2.0-flash",
+                    modelName = settingsRepository.getGeminiModel(),
                     apiKey = apiKey
                 )
 
