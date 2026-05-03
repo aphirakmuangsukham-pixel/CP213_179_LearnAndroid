@@ -154,7 +154,7 @@ fun ChallengeGameScreen(navController: NavController, viewModel: FlashCardViewMo
                 // Progress
                 if (mode != "time_attack") {
                     LinearProgressIndicator(
-                        progress = currentIndex.toFloat() / cards.size,
+                        progress = { currentIndex.toFloat() / cards.size },
                         modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
                     )
                     Spacer(modifier = Modifier.height(8.dp))

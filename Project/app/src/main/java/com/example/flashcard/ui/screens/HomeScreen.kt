@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -102,7 +102,7 @@ fun HomeScreen(navController: NavController, viewModel: FlashCardViewModel) {
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.MenuBook, contentDescription = "Cards Today", tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(32.dp))
+                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Cards Today", tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(32.dp))
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("$cardsStudiedToday Cards", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text("Studied Today", style = MaterialTheme.typography.bodySmall)
